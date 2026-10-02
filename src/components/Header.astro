@@ -1,0 +1,101 @@
+---
+const nav = [
+  { href: '/#experience', label: 'Experience' },
+  { href: '/#projects', label: 'Projects' },
+  { href: '/blog', label: 'Blog' },
+  { href: '/tags', label: 'Tags' },
+];
+---
+
+<header class="site-header">
+  <div class="container inner">
+    <a href="/" class="logo mono">Utsav Pandey<span>.</span></a>
+    <nav>
+      {nav.map((item) => (
+        <a href={item.href}>{item.label}</a>
+      ))}
+      <a href="/resume.pdf" class="btn btn-ghost resume-btn" target="_blank" rel="noopener">Resume</a>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    backdrop-filter: blur(10px);
+    background: rgba(10, 12, 16, 0.75);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 68px;
+    gap: 16px;
+  }
+
+  .logo {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--text);
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .logo span {
+    color: var(--accent);
+  }
+
+  nav {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    min-width: 0;
+    flex: 1 1 auto;
+    justify-content: flex-start;
+  }
+
+  @media (min-width: 641px) {
+    nav {
+      justify-content: flex-end;
+    }
+  }
+
+  nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  nav a {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    transition: color 0.2s ease;
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
+
+  nav a:hover {
+    color: var(--text);
+  }
+
+  .resume-btn {
+    padding: 7px 16px;
+    font-size: 0.82rem;
+  }
+
+  @media (max-width: 640px) {
+    .logo {
+      font-size: 1rem;
+    }
+    nav {
+      gap: 16px;
+    }
+    .resume-btn {
+      display: none;
+    }
+  }
+</style>

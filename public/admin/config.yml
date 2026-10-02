@@ -1,0 +1,28 @@
+backend:
+  name: github
+  repo: utsavosho/utsavosho.github.io
+  branch: main
+  base_url: https://portfolio-cms-auth.utsav-pandey18.workers.dev
+  auth_endpoint: auth
+
+# Where images you upload through the CMS get stored, and the path
+# used to reference them in Markdown (must match Astro's `public/` rules).
+media_folder: "public/uploads"
+public_folder: "/uploads"
+
+collections:
+  - name: "blog"
+    label: "Blog"
+    folder: "src/content/blog"
+    create: true
+    slug: "{{slug}}"
+    extension: "md"
+    format: "frontmatter"
+    fields:
+      - { label: "Title", name: "title", widget: "string" }
+      - { label: "Description", name: "description", widget: "text" }
+      - { label: "Publish Date", name: "pubDate", widget: "datetime" }
+      - { label: "Updated Date", name: "updatedDate", widget: "datetime", required: false }
+      - { label: "Tags", name: "tags", widget: "list", default: [] }
+      - { label: "Draft", name: "draft", widget: "boolean", default: false }
+      - { label: "Body", name: "body", widget: "markdown" }

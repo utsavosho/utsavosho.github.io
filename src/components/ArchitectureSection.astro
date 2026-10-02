@@ -1,0 +1,128 @@
+---
+const stages = [
+  { label: 'Sources', desc: 'APIs, databases, event streams', icon: '⌁' },
+  { label: 'Ingestion', desc: 'Batch + streaming collectors', icon: '↓' },
+  { label: 'Transform', desc: 'dbt models, validation, tests', icon: '⇄' },
+  { label: 'Warehouse', desc: 'Modeled, versioned, queryable', icon: '▤' },
+  { label: 'Serve', desc: 'Dashboards, APIs, ML features', icon: '↗' },
+];
+---
+
+<section id="architecture">
+  <div class="container">
+    <span class="eyebrow">How I think about systems</span>
+    <h2>A pipeline built to be trusted</h2>
+    <p class="sub">
+      Every project below follows some version of this shape: ingest
+      reliably, transform with tests, and serve data people can act on.
+    </p>
+
+    <div class="pipeline">
+      {stages.map((stage, i) => (
+        <>
+          <div class="stage card">
+            <span class="icon mono">{stage.icon}</span>
+            <h3>{stage.label}</h3>
+            <p>{stage.desc}</p>
+          </div>
+          {i < stages.length - 1 && <div class="connector" aria-hidden="true"></div>}
+        </>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  h2 {
+    font-size: clamp(1.8rem, 3vw, 2.4rem);
+    margin-top: 16px;
+  }
+
+  .sub {
+    max-width: 60ch;
+    margin-top: 16px;
+    font-size: 1.05rem;
+  }
+
+  .pipeline {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin-top: 56px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+
+  .stage {
+    flex: 1 1 0;
+    min-width: 170px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .icon {
+    color: var(--accent);
+    font-size: 1.4rem;
+  }
+
+  .stage h3 {
+    font-size: 1rem;
+  }
+
+  .stage p {
+    font-size: 0.85rem;
+  }
+
+  .connector {
+    flex: 0 0 40px;
+    align-self: center;
+    height: 1px;
+    background: repeating-linear-gradient(
+      90deg,
+      var(--border-hover) 0,
+      var(--border-hover) 6px,
+      transparent 6px,
+      transparent 12px
+    );
+    position: relative;
+  }
+
+  .connector::after {
+    content: '';
+    position: absolute;
+    right: -1px;
+    top: -3px;
+    width: 6px;
+    height: 6px;
+    border-right: 1px solid var(--border-hover);
+    border-top: 1px solid var(--border-hover);
+    transform: rotate(45deg);
+  }
+
+  @media (max-width: 900px) {
+    .pipeline {
+      flex-direction: column;
+    }
+    .connector {
+      width: 1px;
+      height: 24px;
+      flex: 0 0 24px;
+      align-self: flex-start;
+      margin-left: 20px;
+      background: repeating-linear-gradient(
+        180deg,
+        var(--border-hover) 0,
+        var(--border-hover) 6px,
+        transparent 6px,
+        transparent 12px
+      );
+    }
+    .connector::after {
+      transform: rotate(135deg);
+      top: unset;
+      bottom: -3px;
+      left: -3px;
+    }
+  }
+</style>
