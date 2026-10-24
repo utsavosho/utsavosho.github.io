@@ -117,82 +117,134 @@
     });
     scene.add(nebulaGroup);
 
-    // ---- Central planet: procedural shader, no textures ----
-    const planetGroup = new THREE.Group();
-    planetGroup.position.set(0, 0, 0);
-    scene.add(planetGroup);
+    // ---- Planets: small procedural solar system, no textures ----
+    type Planet = { group: THREE.Group; mesh: THREE.Mesh; spin: number; radius: number };
+    const planets: Planet[] = [];
 
-    const planetGeo = new THREE.SphereGeometry(1.5, 64, 64);
-    const planetMat = new THREE.ShaderMaterial({
-      uniforms: {
-        colorTop: { value: new THREE.Color('#9d8bff') },
-        colorBottom: { value: new THREE.Color('#1a1440') },
-        lightDir: { value: new THREE.Vector3(0.6, 0.5, 0.8) },
-      },
-      vertexShader: `
-        varying vec3 vNormal;
-        varying vec3 vWorldPos;
-        void main() {
-          vNormal = normalize(normalMatrix * normal);
-          vec4 worldPos = modelMatrix * vec4(position, 1.0);
-          vWorldPos = worldPos.xyz;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform vec3 colorTop;
-        uniform vec3 colorBottom;
-        uniform vec3 lightDir;
-        varying vec3 vNormal;
-        varying vec3 vWorldPos;
-        void main() {
-          float grad = smoothstep(-1.5, 1.5, vWorldPos.y);
-          vec3 base = mix(colorBottom, colorTop, grad);
-          float diff = max(dot(normalize(vNormal), normalize(lightDir)), 0.0);
-          vec3 lit = base * (0.4 + 0.7 * diff);
-          vec3 viewDir = normalize(cameraPosition - vWorldPos);
-          float fresnel = pow(1.0 - max(dot(normalize(vNormal), viewDir), 0.0), 2.2);
-          vec3 rim = vec3(0.64, 0.6, 1.0) * fresnel * 0.8;
-          gl_FragColor = vec4(lit + rim, 1.0);
-        }
-      `,
+    function createPlanet(opts: {
+      radius: number;
+      colorTop: string;
+      colorBottom: string;
+      glowColor: string;
+      position: [number, number, number];
+      spin: number;
+      lightDir?: [number, number, number];
+    }) {
+      const group = new THREE.Group();
+      group.position.set(...opts.position);
+      scene.add(group);
+
+      const geo = new THREE.SphereGeometry(opts.radius, 48, 48);
+      const mat = new THREE.ShaderMaterial({
+        uniforms: {
+          colorTop: { value: new THREE.Color(opts.colorTop) },
+          colorBottom: { value: new THREE.Color(opts.colorBottom) },
+          lightDir: { value: new THREE.Vector3(...(opts.lightDir ?? [0.6, 0.5, 0.8])) },
+        },
+        vertexShader: `
+          varying vec3 vNormal;
+          varying vec3 vWorldPos;
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            vec4 worldPos = modelMatrix * vec4(position, 1.0);
+            vWorldPos = worldPos.xyz;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform vec3 colorTop;
+          uniform vec3 colorBottom;
+          uniform vec3 lightDir;
+          varying vec3 vNormal;
+          varying vec3 vWorldPos;
+          void main() {
+            float grad = smoothstep(-1.5, 1.5, vWorldPos.y);
+            vec3 base = mix(colorBottom, colorTop, grad);
+            float diff = max(dot(normalize(vNormal), normalize(lightDir)), 0.0);
+            vec3 lit = base * (0.4 + 0.7 * diff);
+            vec3 viewDir = normalize(cameraPosition - vWorldPos);
+            float fresnel = pow(1.0 - max(dot(normalize(vNormal), viewDir), 0.0), 2.2);
+            vec3 rim = colorTop * fresnel * 0.8;
+            gl_FragColor = vec4(lit + rim, 1.0);
+          }
+        `,
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      group.add(mesh);
+
+      const haloGeo = new THREE.SphereGeometry(opts.radius * 1.12, 32, 32);
+      const haloMat = new THREE.ShaderMaterial({
+        uniforms: { glowColor: { value: new THREE.Color(opts.glowColor) } },
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        side: THREE.BackSide,
+        vertexShader: `
+          varying vec3 vNormal;
+          varying vec3 vWorldPos;
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            vec4 worldPos = modelMatrix * vec4(position, 1.0);
+            vWorldPos = worldPos.xyz;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform vec3 glowColor;
+          varying vec3 vNormal;
+          varying vec3 vWorldPos;
+          void main() {
+            vec3 viewDir = normalize(cameraPosition - vWorldPos);
+            float fresnel = pow(1.0 - max(dot(normalize(vNormal), viewDir), 0.0), 3.0);
+            gl_FragColor = vec4(glowColor, fresnel * 0.55);
+          }
+        `,
+      });
+      const halo = new THREE.Mesh(haloGeo, haloMat);
+      group.add(halo);
+
+      planets.push({ group, mesh, spin: opts.spin, radius: opts.radius });
+      return { group, mesh };
+    }
+
+    // Main "hero" planet — violet, largest, foreground, interactive focal point.
+    const { group: planetGroup, mesh: planet } = createPlanet({
+      radius: 1.5,
+      colorTop: '#9d8bff',
+      colorBottom: '#1a1440',
+      glowColor: '#8b7bff',
+      position: [isNarrow ? 2.6 : 4.6, 0.2, isNarrow ? -4 : -5.5],
+      spin: 0.08,
     });
-    const planet = new THREE.Mesh(planetGeo, planetMat);
-    planetGroup.add(planet);
-
-    const haloGeo = new THREE.SphereGeometry(1.68, 48, 48);
-    const haloMat = new THREE.ShaderMaterial({
-      uniforms: { glowColor: { value: new THREE.Color('#8b7bff') } },
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      side: THREE.BackSide,
-      vertexShader: `
-        varying vec3 vNormal;
-        varying vec3 vWorldPos;
-        void main() {
-          vNormal = normalize(normalMatrix * normal);
-          vec4 worldPos = modelMatrix * vec4(position, 1.0);
-          vWorldPos = worldPos.xyz;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform vec3 glowColor;
-        varying vec3 vNormal;
-        varying vec3 vWorldPos;
-        void main() {
-          vec3 viewDir = normalize(cameraPosition - vWorldPos);
-          float fresnel = pow(1.0 - max(dot(normalize(vNormal), viewDir), 0.0), 3.0);
-          gl_FragColor = vec4(glowColor, fresnel * 0.55);
-        }
-      `,
-    });
-    const halo = new THREE.Mesh(haloGeo, haloMat);
-    planetGroup.add(halo);
-
-    planetGroup.position.set(isNarrow ? 2.6 : 4.6, 0.2, isNarrow ? -4 : -5.5);
     planetGroup.scale.setScalar(isNarrow ? 0.6 : 0.95);
+
+    // Smaller companion worlds, scattered at varying depth for a loose solar-system feel.
+    createPlanet({
+      radius: 0.55,
+      colorTop: '#ffb27a',
+      colorBottom: '#5c2a14',
+      glowColor: '#ff9d5c',
+      position: [isNarrow ? -4.5 : -8.2, -4.8, -9],
+      spin: 0.14,
+    });
+    createPlanet({
+      radius: 0.34,
+      colorTop: '#6fe3d9',
+      colorBottom: '#0f3a38',
+      glowColor: '#4dffc4',
+      position: [isNarrow ? 3 : 6.2, -3.6, -13],
+      spin: 0.2,
+    });
+    if (!isNarrow) {
+      createPlanet({
+        radius: 0.26,
+        colorTop: '#ff8fae',
+        colorBottom: '#4a1226',
+        glowColor: '#ff6f93',
+        position: [-2.2, 4.4, -17],
+        spin: 0.26,
+      });
+    }
 
     // ---- Click ripple on the planet ----
     type Ripple = { mesh: THREE.Mesh; start: number };
@@ -200,8 +252,9 @@
     const raycaster = new THREE.Raycaster();
     const pointerNdc = new THREE.Vector2();
 
-    function spawnRipple(point: THREE.Vector3) {
-      const geo = new THREE.RingGeometry(0.16, 0.24, 48);
+    function spawnRipple(point: THREE.Vector3, hitPlanet: Planet) {
+      const r = hitPlanet.radius;
+      const geo = new THREE.RingGeometry(r * 0.11, r * 0.16, 48);
       const mat = new THREE.MeshBasicMaterial({
         color: 0xcfc7ff,
         transparent: true,
@@ -213,13 +266,15 @@
       });
       const mesh = new THREE.Mesh(geo, mat);
       // Nudge slightly off the sphere surface along its normal to avoid z-fighting.
-      const normal = point.clone().sub(planetGroup.position).normalize();
-      mesh.position.copy(point).addScaledVector(normal, 0.03);
+      const normal = point.clone().sub(hitPlanet.group.position).normalize();
+      mesh.position.copy(point).addScaledVector(normal, r * 0.02);
       mesh.lookAt(camera.position);
       mesh.renderOrder = 10;
       scene.add(mesh);
       ripples.push({ mesh, start: performance.now() });
     }
+
+    const planetMeshes = () => planets.map((p) => p.mesh);
 
     function handlePointerDown(e: PointerEvent) {
       const target = e.target as HTMLElement | null;
@@ -227,8 +282,10 @@
       pointerNdc.x = (e.clientX / window.innerWidth) * 2 - 1;
       pointerNdc.y = -(e.clientY / window.innerHeight) * 2 + 1;
       raycaster.setFromCamera(pointerNdc, camera);
-      const hit = raycaster.intersectObject(planet, false)[0];
-      if (hit) spawnRipple(hit.point);
+      const hit = raycaster.intersectObjects(planetMeshes(), false)[0];
+      if (!hit) return;
+      const hitPlanet = planets.find((p) => p.mesh === hit.object);
+      if (hitPlanet) spawnRipple(hit.point, hitPlanet);
     }
 
     // ---- Pointer parallax (mouse + touch) ----
@@ -301,7 +358,9 @@
         layer.points.rotation.y += pointerX * layer.parallax * 0.02;
       });
 
-      planet.rotation.y += delta * 0.08;
+      planets.forEach((p) => {
+        p.mesh.rotation.y += delta * p.spin;
+      });
       nebulaGroup.children.forEach((child, i) => {
         child.position.y += Math.sin(elapsed * 0.1 + i) * 0.0015;
       });
