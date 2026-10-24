@@ -1,11 +1,17 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
+import TechTicker from '../components/TechTicker.astro';
+import RecentPosts from '../components/RecentPosts.astro';
+import About from '../components/About.astro';
 ---
 
 <BaseLayout
   title="Utsav Pandey — Data Engineer"
-  description="Data Engineer with 4 years building end-to-end pipelines for major French retailers — large-scale ingestion, PySpark, Airflow, dbt, and Snowflake."
+  description="Exploring the systems, technologies, and ideas behind modern data platforms. Notes, experiments, and discoveries from my journey through data engineering."
 >
   <Hero />
+  <TechTicker />
+  <RecentPosts />
+  <About />
 </BaseLayout>

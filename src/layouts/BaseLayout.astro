@@ -11,7 +11,7 @@ interface Props {
 
 const {
   title,
-  description = 'Utsav Pandey — Data Engineer building pipelines, platforms, and the occasional side project.',
+  description = 'Notes, experiments, and discoveries from a Data Engineer exploring modern data platforms.',
   image = '/og-default.png',
 } = Astro.props;
 
@@ -51,5 +51,6 @@ const ogImageURL = new URL(image, Astro.site);
       <slot />
     </main>
     <Footer />
+    <script src="../scripts/reveal.js"></script>
   </body>
 </html>

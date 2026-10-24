@@ -1,30 +1,45 @@
 ---
+import DataFlowCanvas from './DataFlowCanvas.astro';
 ---
 
 <section class="hero">
-  <div class="container">
-    <h1>
-      <span class="accent">Data Engineer.</span>
-    </h1>
-    <p class="lede">
-      4 years building data pipelines for major French retailers.
+  <DataFlowCanvas />
+  <div class="container hero-inner">
+    <span class="eyebrow hero-anim" style="--d: 0">DATA ENGINEER · BUILDER · LIFELONG LEARNER</span>
+    <h1 class="hero-anim" style="--d: 1">I turn data into something <span class="accent">meaningful.</span></h1>
+    <p class="lede hero-anim" style="--d: 2">
+      Exploring the systems, technologies, and ideas behind modern data
+      platforms. Notes, experiments, and discoveries from my journey
+      through data engineering.
     </p>
-    <div class="cta">
-      <a href="/blog" class="btn btn-primary">Read the blog</a>
+    <div class="cta hero-anim" style="--d: 3">
+      <a href="/blog" class="btn btn-primary">Explore the blog ↗</a>
+      <a href="#about" class="btn btn-ghost">About me</a>
     </div>
   </div>
 </section>
 
 <style>
   .hero {
-    padding-top: 140px;
-    padding-bottom: 80px;
+    position: relative;
+    overflow: hidden;
+    padding-top: 160px;
+    padding-bottom: 120px;
+    min-height: 88vh;
+    display: flex;
+    align-items: center;
+  }
+
+  .hero-inner {
+    position: relative;
+    z-index: 1;
   }
 
   h1 {
-    font-size: clamp(2.4rem, 5vw, 4rem);
-    max-width: 16ch;
-    margin-top: 24px;
+    font-size: clamp(2.6rem, 6vw, 5rem);
+    max-width: 18ch;
+    margin-top: 28px;
+    letter-spacing: -0.03em;
   }
 
   .accent {
@@ -32,21 +47,48 @@
   }
 
   .lede {
-    font-size: 1.15rem;
-    max-width: 46ch;
-    margin-top: 24px;
+    font-size: 1.2rem;
+    max-width: 50ch;
+    margin-top: 28px;
   }
 
   .cta {
     display: flex;
     gap: 14px;
-    margin-top: 40px;
+    margin-top: 44px;
   }
 
   @media (max-width: 640px) {
+    .hero {
+      padding-top: 120px;
+      min-height: auto;
+    }
     .cta {
       flex-direction: column;
       align-items: flex-start;
+    }
+  }
+
+  /* Staggered entrance */
+  .hero-anim {
+    opacity: 0;
+    transform: translateY(22px);
+    animation: hero-fade-up 0.9s var(--ease) forwards;
+    animation-delay: calc(var(--d, 0) * 0.12s + 0.1s);
+  }
+
+  @keyframes hero-fade-up {
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-anim {
+      animation: none;
+      opacity: 1;
+      transform: none;
     }
   }
 </style>

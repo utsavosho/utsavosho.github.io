@@ -10,7 +10,7 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
 <BaseLayout title="Blog — Utsav Pandey" description="Writing on data engineering, pipelines, and systems.">
   <section>
     <div class="container">
-      <div class="head">
+      <div class="head reveal">
         <div>
           <span class="eyebrow">Writing</span>
           <h1>Blog</h1>
@@ -21,7 +21,7 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
 
       <div class="posts">
         {posts.map((post) => (
-          <div class="card post">
+          <div class="card post reveal">
             <a href={`/blog/${post.id}`} class="post-link">
               <div class="post-head">
                 <h2>{post.data.title}</h2>

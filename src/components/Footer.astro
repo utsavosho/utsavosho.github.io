@@ -9,7 +9,13 @@ const links = [
 
 <footer>
   <div class="container inner">
-    <p class="mono">&copy; {year}</p>
+    <div class="meta">
+      <p class="mono">&copy; {year}</p>
+      <p class="mono clock" id="footer-clock" aria-label="Current time in Paris">
+        <span class="dot" aria-hidden="true"></span>
+        Paris — <span id="footer-clock-time">--:--:--</span>
+      </p>
+    </div>
     <div class="links">
       {links.map((l) => <a href={l.href} target="_blank" rel="noopener">{l.label}</a>)}
     </div>
@@ -30,9 +36,31 @@ const links = [
     gap: 16px;
   }
 
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
   p {
     font-size: 0.8rem;
     color: var(--text-faint);
+  }
+
+  .clock {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .clock .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent-glow);
+    flex: 0 0 auto;
   }
 
   .links {
@@ -50,3 +78,20 @@ const links = [
     color: var(--accent);
   }
 </style>
+
+<script>
+  const el = document.getElementById('footer-clock-time');
+  if (el) {
+    const formatter = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Europe/Paris',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+    const tick = () => {
+      el.textContent = formatter.format(new Date());
+    };
+    tick();
+    setInterval(tick, 1000);
+  }
+</script>
