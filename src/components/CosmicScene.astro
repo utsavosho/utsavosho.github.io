@@ -41,31 +41,12 @@
     const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 200);
     camera.position.set(0, 0, 9);
 
-    // Positioning scene objects in fixed world units only looks right at the
-    // aspect ratio it was tuned for — on a wider monitor the visible frustum
-    // is much wider, so the same coordinates cluster near the center instead
-    // of spanning the screen. Position things as a fraction of the actual
-    // visible width/height at their depth instead, so the scene spreads
-    // edge-to-edge on any screen size.
-    function visibleHalfSizeAtZ(worldZ: number) {
-      const distance = Math.abs(camera.position.z - worldZ);
-      const vFov = THREE.MathUtils.degToRad(camera.fov);
-      const halfHeight = Math.tan(vFov / 2) * distance;
-      const halfWidth = halfHeight * camera.aspect;
-      return { halfWidth, halfHeight };
-    }
-
-    function placeAt(xFrac: number, yFrac: number, z: number): [number, number, number] {
-      const { halfWidth, halfHeight } = visibleHalfSizeAtZ(z);
-      return [xFrac * halfWidth, yFrac * halfHeight, z];
-    }
-
     const bgColor = new THREE.Color('#050609');
     renderer.setClearColor(bgColor, 1);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
 
-    // ---- Procedural soft-dot texture (used for stars and nebula, no image assets) ----
+    // ---- Procedural soft-dot texture (used for stars, no image assets) ----
     function makeRadialTexture(inner: string, outer: string, size = 128) {
       const c = document.createElement('canvas');
       c.width = c.height = size;
@@ -81,8 +62,6 @@
     }
 
     const starTexture = makeRadialTexture('rgba(255,255,255,1)', 'rgba(255,255,255,0)', 64);
-    const nebulaTextureViolet = makeRadialTexture('rgba(139,123,255,0.5)', 'rgba(139,123,255,0)', 256);
-    const nebulaTextureBlue = makeRadialTexture('rgba(91,163,255,0.4)', 'rgba(91,163,255,0)', 256);
 
     // ---- Starfield: three depth layers for genuine parallax ----
     type StarLayer = { points: THREE.Points; parallax: number; spin: number };
@@ -118,127 +97,6 @@
     buildStarLayer(Math.round(1800 * starScale), [60, 100], 0.6, 0.025, 0.0015);
     buildStarLayer(Math.round(900 * starScale), [35, 60], 0.9, 0.05, 0.003);
     buildStarLayer(Math.round(350 * starScale), [18, 34], 1.3, 0.09, 0.005);
-
-    // ---- Nebula dust: soft procedurally-colored sprites at varying depth ----
-    const nebulaGroup = new THREE.Group();
-    const nebulaConfigs: Array<[THREE.Texture, number, number, number, number]> = [
-      [nebulaTextureViolet, ...placeAt(-0.85, 0.35, -30), 30],
-      [nebulaTextureBlue, ...placeAt(0.95, -0.4, -40), 34],
-      [nebulaTextureViolet, ...placeAt(0.5, 0.55, -50), 38],
-      [nebulaTextureBlue, ...placeAt(-1.05, -0.45, -45), 32],
-    ];
-    nebulaConfigs.forEach(([tex, x, y, z, scale]) => {
-      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.5, depthWrite: false, blending: THREE.AdditiveBlending });
-      const sprite = new THREE.Sprite(mat);
-      sprite.position.set(x, y, z);
-      sprite.scale.set(scale, scale, 1);
-      nebulaGroup.add(sprite);
-    });
-    scene.add(nebulaGroup);
-
-    // ---- Distant galaxies: procedural spiral-ish sprites, no image assets ----
-    function makeGalaxyTexture(color: string, size = 256) {
-      const c = document.createElement('canvas');
-      c.width = c.height = size;
-      const g = c.getContext('2d')!;
-      const cx = size / 2;
-      const cy = size / 2;
-      g.translate(cx, cy);
-      // Faint spiral arms: several rotated, elongated soft ellipses.
-      for (let i = 0; i < 3; i++) {
-        g.save();
-        g.rotate((i * Math.PI * 2) / 3 + 0.4);
-        const armGrad = g.createRadialGradient(0, 0, 0, 0, 0, size * 0.46);
-        armGrad.addColorStop(0, color.replace('ALPHA', '0.28'));
-        armGrad.addColorStop(1, color.replace('ALPHA', '0'));
-        g.fillStyle = armGrad;
-        g.scale(1, 0.32);
-        g.beginPath();
-        g.ellipse(size * 0.22, 0, size * 0.34, size * 0.34, 0, 0, Math.PI * 2);
-        g.fill();
-        g.restore();
-      }
-      g.rotate(0);
-      // Bright core.
-      const coreGrad = g.createRadialGradient(0, 0, 0, 0, 0, size * 0.16);
-      coreGrad.addColorStop(0, color.replace('ALPHA', '0.95'));
-      coreGrad.addColorStop(1, color.replace('ALPHA', '0'));
-      g.fillStyle = coreGrad;
-      g.beginPath();
-      g.arc(0, 0, size * 0.16, 0, Math.PI * 2);
-      g.fill();
-      const tex = new THREE.CanvasTexture(c);
-      tex.needsUpdate = true;
-      return tex;
-    }
-
-    const galaxyTexViolet = makeGalaxyTexture('rgba(190,170,255,ALPHA)');
-    const galaxyTexBlue = makeGalaxyTexture('rgba(150,200,255,ALPHA)');
-    const galaxyGroup = new THREE.Group();
-    const galaxyConfigs: Array<[THREE.Texture, number, number, number, number, number]> = [
-      [galaxyTexViolet, ...placeAt(-0.92, 0.6, -42), 26, 0.6],
-      [galaxyTexBlue, ...placeAt(1.0, 0.68, -55), 30, -0.9],
-    ];
-    galaxyConfigs.forEach(([tex, x, y, z, scale, rot]) => {
-      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending, rotation: rot });
-      const sprite = new THREE.Sprite(mat);
-      sprite.position.set(x, y, z);
-      sprite.scale.set(scale, scale, 1);
-      galaxyGroup.add(sprite);
-    });
-    scene.add(galaxyGroup);
-
-    // ---- Black hole: dark core + glowing accretion disc, far background ----
-    const blackHoleGroup = new THREE.Group();
-    blackHoleGroup.position.set(...placeAt(-0.82, 0.62, -22));
-    scene.add(blackHoleGroup);
-
-    const voidCore = new THREE.Mesh(
-      new THREE.SphereGeometry(0.62, 32, 32),
-      new THREE.MeshBasicMaterial({ color: 0x030308 })
-    );
-    blackHoleGroup.add(voidCore);
-
-    const discInner = 0.72;
-    const discOuter = 1.55;
-    const accretionDisc = new THREE.Mesh(
-      new THREE.RingGeometry(discInner, discOuter, 96),
-      new THREE.ShaderMaterial({
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        side: THREE.DoubleSide,
-        uniforms: {
-          innerR: { value: discInner / (2 * discOuter) },
-          outerR: { value: 0.5 },
-        },
-        vertexShader: `
-          varying vec2 vUv;
-          void main() {
-            vUv = uv;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-          }
-        `,
-        fragmentShader: `
-          uniform float innerR;
-          uniform float outerR;
-          varying vec2 vUv;
-          void main() {
-            float d = distance(vUv, vec2(0.5));
-            float t = clamp((d - innerR) / (outerR - innerR), 0.0, 1.0);
-            float fadeOuter = 1.0 - smoothstep(0.55, 1.0, t);
-            float fadeInner = smoothstep(0.0, 0.18, t);
-            float alpha = fadeOuter * fadeInner;
-            vec3 hot = vec3(1.0, 0.85, 0.55);
-            vec3 cool = vec3(0.55, 0.42, 1.0);
-            vec3 color = mix(hot, cool, smoothstep(0.0, 1.0, t));
-            gl_FragColor = vec4(color, alpha * 0.9);
-          }
-        `,
-      })
-    );
-    accretionDisc.rotation.x = Math.PI / 2.4;
-    blackHoleGroup.add(accretionDisc);
 
     // ---- Pointer parallax (mouse + touch) ----
     let pointerX = 0;
@@ -294,8 +152,6 @@
     function animate() {
       if (!running) return;
       timer.update();
-      const delta = Math.min(timer.getDelta(), 0.05);
-      const elapsed = timer.getElapsed();
 
       pointerX += (targetPointerX - pointerX) * 0.04;
       pointerY += (targetPointerY - pointerY) * 0.04;
@@ -309,12 +165,6 @@
         layer.points.rotation.x = pointerY * layer.parallax;
         layer.points.rotation.y += pointerX * layer.parallax * 0.02;
       });
-
-      nebulaGroup.children.forEach((child, i) => {
-        child.position.y += Math.sin(elapsed * 0.1 + i) * 0.0015;
-      });
-
-      accretionDisc.rotation.z += delta * 0.06;
 
       renderer.render(scene, camera);
       if (running) requestAnimationFrame(animate);
