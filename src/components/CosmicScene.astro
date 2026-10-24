@@ -117,6 +117,110 @@
     });
     scene.add(nebulaGroup);
 
+    // ---- Distant galaxies: procedural spiral-ish sprites, no image assets ----
+    function makeGalaxyTexture(color: string, size = 256) {
+      const c = document.createElement('canvas');
+      c.width = c.height = size;
+      const g = c.getContext('2d')!;
+      const cx = size / 2;
+      const cy = size / 2;
+      g.translate(cx, cy);
+      // Faint spiral arms: several rotated, elongated soft ellipses.
+      for (let i = 0; i < 3; i++) {
+        g.save();
+        g.rotate((i * Math.PI * 2) / 3 + 0.4);
+        const armGrad = g.createRadialGradient(0, 0, 0, 0, 0, size * 0.46);
+        armGrad.addColorStop(0, color.replace('ALPHA', '0.28'));
+        armGrad.addColorStop(1, color.replace('ALPHA', '0'));
+        g.fillStyle = armGrad;
+        g.scale(1, 0.32);
+        g.beginPath();
+        g.ellipse(size * 0.22, 0, size * 0.34, size * 0.34, 0, 0, Math.PI * 2);
+        g.fill();
+        g.restore();
+      }
+      g.rotate(0);
+      // Bright core.
+      const coreGrad = g.createRadialGradient(0, 0, 0, 0, 0, size * 0.16);
+      coreGrad.addColorStop(0, color.replace('ALPHA', '0.95'));
+      coreGrad.addColorStop(1, color.replace('ALPHA', '0'));
+      g.fillStyle = coreGrad;
+      g.beginPath();
+      g.arc(0, 0, size * 0.16, 0, Math.PI * 2);
+      g.fill();
+      const tex = new THREE.CanvasTexture(c);
+      tex.needsUpdate = true;
+      return tex;
+    }
+
+    const galaxyTexViolet = makeGalaxyTexture('rgba(190,170,255,ALPHA)');
+    const galaxyTexBlue = makeGalaxyTexture('rgba(150,200,255,ALPHA)');
+    const galaxyGroup = new THREE.Group();
+    const galaxyConfigs: Array<[THREE.Texture, number, number, number, number, number]> = [
+      [galaxyTexViolet, isNarrow ? -6 : -11, 6.5, -42, 20, 0.6],
+      [galaxyTexBlue, isNarrow ? 7 : 13, 7.5, -55, 24, -0.9],
+    ];
+    galaxyConfigs.forEach(([tex, x, y, z, scale, rot]) => {
+      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending, rotation: rot });
+      const sprite = new THREE.Sprite(mat);
+      sprite.position.set(x, y, z);
+      sprite.scale.set(scale, scale, 1);
+      galaxyGroup.add(sprite);
+    });
+    scene.add(galaxyGroup);
+
+    // ---- Black hole: dark core + glowing accretion disc, far background ----
+    const blackHoleGroup = new THREE.Group();
+    blackHoleGroup.position.set(isNarrow ? -7.5 : -14, 7.5, -22);
+    scene.add(blackHoleGroup);
+
+    const voidCore = new THREE.Mesh(
+      new THREE.SphereGeometry(0.62, 32, 32),
+      new THREE.MeshBasicMaterial({ color: 0x030308 })
+    );
+    blackHoleGroup.add(voidCore);
+
+    const discInner = 0.72;
+    const discOuter = 1.55;
+    const accretionDisc = new THREE.Mesh(
+      new THREE.RingGeometry(discInner, discOuter, 96),
+      new THREE.ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+        uniforms: {
+          innerR: { value: discInner / (2 * discOuter) },
+          outerR: { value: 0.5 },
+        },
+        vertexShader: `
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform float innerR;
+          uniform float outerR;
+          varying vec2 vUv;
+          void main() {
+            float d = distance(vUv, vec2(0.5));
+            float t = clamp((d - innerR) / (outerR - innerR), 0.0, 1.0);
+            float fadeOuter = 1.0 - smoothstep(0.55, 1.0, t);
+            float fadeInner = smoothstep(0.0, 0.18, t);
+            float alpha = fadeOuter * fadeInner;
+            vec3 hot = vec3(1.0, 0.85, 0.55);
+            vec3 cool = vec3(0.55, 0.42, 1.0);
+            vec3 color = mix(hot, cool, smoothstep(0.0, 1.0, t));
+            gl_FragColor = vec4(color, alpha * 0.9);
+          }
+        `,
+      })
+    );
+    accretionDisc.rotation.x = Math.PI / 2.4;
+    blackHoleGroup.add(accretionDisc);
+
     // ---- Planets: small procedural solar system, no textures ----
     type Planet = { group: THREE.Group; mesh: THREE.Mesh; spin: number; radius: number };
     const planets: Planet[] = [];
@@ -220,31 +324,97 @@
 
     // Smaller companion worlds, scattered at varying depth for a loose solar-system feel.
     createPlanet({
-      radius: 0.55,
+      radius: 1.05,
       colorTop: '#ffb27a',
       colorBottom: '#5c2a14',
       glowColor: '#ff9d5c',
-      position: [isNarrow ? -4.5 : -8.2, -4.8, -9],
+      position: [isNarrow ? -5.2 : -9.5, -5.2, -9],
       spin: 0.14,
     });
     createPlanet({
-      radius: 0.34,
+      radius: 0.72,
       colorTop: '#6fe3d9',
       colorBottom: '#0f3a38',
       glowColor: '#4dffc4',
-      position: [isNarrow ? 3 : 6.2, -3.6, -13],
+      position: [isNarrow ? 3.6 : 7.4, -4, -13],
       spin: 0.2,
     });
     if (!isNarrow) {
       createPlanet({
-        radius: 0.26,
+        radius: 0.55,
         colorTop: '#ff8fae',
         colorBottom: '#4a1226',
         glowColor: '#ff6f93',
-        position: [-2.2, 4.4, -17],
+        position: [-2.6, 5, -17],
         spin: 0.26,
       });
     }
+
+    // Soft single light for the station/ship below (planets use their own baked shading).
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.4);
+    keyLight.position.set(4, 6, 8);
+    scene.add(keyLight);
+    scene.add(new THREE.AmbientLight(0x404060, 0.6));
+
+    // ---- Space station: a small rotating-ring habitat, built from primitives ----
+    const stationGroup = new THREE.Group();
+    stationGroup.position.set(isNarrow ? 1.8 : 2.4, -6, -8);
+    stationGroup.scale.setScalar(isNarrow ? 0.9 : 1.2);
+    scene.add(stationGroup);
+
+    const hullMat = new THREE.MeshStandardMaterial({ color: 0x8890a6, metalness: 0.6, roughness: 0.4 });
+    const accentMat = new THREE.MeshStandardMaterial({ color: 0x3a3f55, metalness: 0.5, roughness: 0.5 });
+
+    const stationHub = new THREE.Mesh(new THREE.SphereGeometry(0.11, 20, 20), hullMat);
+    stationGroup.add(stationHub);
+
+    const stationRing = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.022, 10, 48), accentMat);
+    stationGroup.add(stationRing);
+
+    for (let i = 0; i < 4; i++) {
+      const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.32, 6), hullMat);
+      spoke.rotation.z = Math.PI / 2;
+      spoke.rotation.y = (i * Math.PI) / 2;
+      stationGroup.add(spoke);
+    }
+
+    const windowTex = makeRadialTexture('rgba(255,224,170,1)', 'rgba(255,224,170,0)', 32);
+    for (let i = 0; i < 6; i++) {
+      const windowMat = new THREE.SpriteMaterial({ map: windowTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+      const w = new THREE.Sprite(windowMat);
+      const a = (i / 6) * Math.PI * 2;
+      w.position.set(Math.cos(a) * 0.32, Math.sin(a) * 0.32, 0);
+      w.scale.set(0.035, 0.035, 1);
+      stationGroup.add(w);
+    }
+
+    // ---- Spaceship: a simple hull that drifts slowly across the scene ----
+    const shipGroup = new THREE.Group();
+    shipGroup.scale.setScalar(2.4);
+    scene.add(shipGroup);
+
+    const shipBody = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.22, 10), hullMat);
+    shipBody.rotation.z = -Math.PI / 2;
+    shipGroup.add(shipBody);
+
+    const shipFin = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.1, 0.01), accentMat);
+    shipFin.position.set(-0.05, 0, 0);
+    shipGroup.add(shipFin);
+
+    const engineGlowTex = makeRadialTexture('rgba(190,170,255,0.9)', 'rgba(190,170,255,0)', 64);
+    const engineGlow = new THREE.Sprite(
+      new THREE.SpriteMaterial({ map: engineGlowTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })
+    );
+    engineGlow.position.set(-0.13, 0, 0);
+    engineGlow.scale.set(0.12, 0.12, 1);
+    shipGroup.add(engineGlow);
+
+    const shipPath = {
+      y: isNarrow ? -1.2 : -1.6,
+      z: -2,
+      span: isNarrow ? 7 : 12,
+      speed: 0.045,
+    };
 
     // ---- Click ripple on the planet ----
     type Ripple = { mesh: THREE.Mesh; start: number };
@@ -364,6 +534,15 @@
       nebulaGroup.children.forEach((child, i) => {
         child.position.y += Math.sin(elapsed * 0.1 + i) * 0.0015;
       });
+
+      stationGroup.rotation.y += delta * 0.12;
+      stationRing.rotation.z += delta * 0.25;
+
+      accretionDisc.rotation.z += delta * 0.06;
+
+      const shipT = (elapsed * shipPath.speed) % 1;
+      shipGroup.position.set(-shipPath.span + shipT * shipPath.span * 2, shipPath.y + Math.sin(elapsed * 0.3) * 0.15, shipPath.z);
+      shipGroup.visible = shipT < 0.96;
 
       for (let i = ripples.length - 1; i >= 0; i--) {
         const r = ripples[i];

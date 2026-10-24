@@ -106,23 +106,23 @@ code, pre, .mono {
 
 .eyebrow {
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: 1rem;
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--accent);
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .eyebrow::before {
   content: '';
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 8px var(--accent);
+  box-shadow: 0 0 10px var(--accent);
   flex: 0 0 auto;
 }
 
