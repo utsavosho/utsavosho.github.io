@@ -1,0 +1,52 @@
+---
+const year = new Date().getFullYear();
+const links = [
+  { href: 'https://github.com/utsavosho', label: 'GitHub' },
+  { href: 'https://www.linkedin.com/in/utsavpandey/', label: 'LinkedIn' },
+  { href: 'mailto:utsav.pandey18@gmail.com', label: 'Email' },
+];
+---
+
+<footer>
+  <div class="container inner">
+    <p class="mono">&copy; {year} — Built with Astro</p>
+    <div class="links">
+      {links.map((l) => <a href={l.href} target="_blank" rel="noopener">{l.label}</a>)}
+    </div>
+  </div>
+</footer>
+
+<style>
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 0;
+  }
+
+  .inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  p {
+    font-size: 0.8rem;
+    color: var(--text-faint);
+  }
+
+  .links {
+    display: flex;
+    gap: 20px;
+  }
+
+  .links a {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    transition: color 0.2s ease;
+  }
+
+  .links a:hover {
+    color: var(--accent);
+  }
+</style>
