@@ -7,12 +7,13 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft))
   .slice(0, 3);
 ---
 
-<section id="writing">
+<section id="blog">
+  <div class="atmosphere" aria-hidden="true"></div>
   <div class="container">
     <div class="head reveal">
       <div>
-        <span class="eyebrow">Recent writing</span>
-        <h2>Notes from the field</h2>
+        <span class="eyebrow">The blog</span>
+        <h2>Latest posts</h2>
       </div>
       <a href="/blog" class="btn btn-ghost">View all posts</a>
     </div>
@@ -21,11 +22,11 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft))
       <p class="empty reveal">First post is on its way.</p>
     ) : (
       <div class="grid">
-        {posts.map((post) => {
+        {posts.map((post, i) => {
           const minutes = getReadingTime(post.id);
           const topic = post.data.tags[0] ?? 'Notes';
           return (
-            <a href={`/blog/${post.id}`} class="card post-card reveal">
+            <a href={`/blog/${post.id}`} class="card post-card reveal" style={`--float-delay: ${i * 0.7}s`}>
               <span class="topic mono">{topic}</span>
               <h3>{post.data.title}</h3>
               <p>{post.data.description}</p>
@@ -45,6 +46,18 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft))
 </section>
 
 <style>
+  section {
+    position: relative;
+  }
+
+  .atmosphere {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse 60% 45% at 50% 0%, rgba(139, 123, 255, 0.08), transparent 70%);
+  }
+
   .head {
     display: flex;
     justify-content: space-between;
@@ -77,6 +90,13 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft))
     overflow: hidden;
   }
 
+  /* Idle float only starts once the reveal transition has finished, so the
+     two transform-driven effects never fight each other. */
+  .post-card.is-visible {
+    animation: float 7s ease-in-out infinite;
+    animation-delay: calc(1.1s + var(--float-delay, 0s));
+  }
+
   .post-card::before {
     content: '';
     position: absolute;
@@ -93,6 +113,7 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft))
 
   .post-card:hover {
     border-color: var(--accent);
+    box-shadow: 0 12px 40px -12px var(--accent-glow);
   }
 
   .topic {
@@ -120,5 +141,20 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft))
     color: var(--text-faint);
     margin-top: auto;
     padding-top: 4px;
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .post-card {
+      animation: none;
+    }
   }
 </style>
