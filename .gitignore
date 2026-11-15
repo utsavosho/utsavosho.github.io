@@ -25,3 +25,7 @@ pnpm-debug.log*
 
 # Claude Code local settings
 .claude/
+
+# docs
+docs/how-we-built-this-site.html
+docs/how-we-built-this-site.pdf
