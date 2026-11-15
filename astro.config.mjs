@@ -1,4 +1,5 @@
 // @ts-check
+import './this-file-does-not-exist.js';
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 
